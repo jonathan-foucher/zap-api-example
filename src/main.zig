@@ -2,7 +2,30 @@ const std = @import("std");
 const zap = @import("zap");
 
 fn on_request(request: zap.Request) void {
-    request.sendBody("Hello from ZAP") catch return;
+    if (request.path != null) {
+        if (std.mem.eql(u8, request.path.?, "/api/movies")) {
+            if (request.methodAsEnum() == .GET) {
+                std.debug.print("Get all movies\n", .{});
+                request.sendBody("Get all movies") catch return;
+            }
+
+            if (request.methodAsEnum() == .POST) {
+                std.debug.print("Post movie id=, title='' and relase_date=\n", .{});
+                request.setStatus(.ok);
+                return;
+            }
+        }
+        
+        if (std.mem.startsWith(u8, request.path.?, "/api/movies/")) {
+            if(request.methodAsEnum() == .DELETE) {
+                std.debug.print("Delete movie with id \n", .{});
+                request.setStatus(.ok);
+                return;
+            }
+        }
+    }
+
+    return request.setStatus(.not_found);
 }
 
 pub fn main() !void {
