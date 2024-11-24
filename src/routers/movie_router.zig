@@ -4,8 +4,8 @@ const MovieModel = @import("../models/movie.zig");
 const Movie = MovieModel.Movie;
 
 pub fn on_request(request: zap.Request) void {
-    if (request.path != null) {
-        if (std.mem.eql(u8, request.path.?, "/api/movies")) {
+    if (request.path) |path| {
+        if (std.mem.eql(u8, path, "/api/movies")) {
             if (request.methodAsEnum() == .GET) {
                 std.debug.print("Get all movies\n", .{});
                 request.sendBody("Get all movies") catch return;
@@ -25,14 +25,19 @@ pub fn on_request(request: zap.Request) void {
             }
         }
 
-        if (std.mem.startsWith(u8, request.path.?, "/api/movies/")) {
-            if(request.methodAsEnum() == .DELETE) {
-                std.debug.print("Delete movie with id \n", .{});
+        const start_path = "/api/movies/";
+        if (std.mem.startsWith(u8, path, start_path)) {
+            if (request.methodAsEnum() == .DELETE) {
+                const movie_id: i32 = std.fmt.parseInt(i32, path[start_path.len ..], 10) catch {
+                    request.setStatus(.bad_request);
+                    return;
+                };
+                std.debug.print("Delete movie with id {d}\n", .{ movie_id });
                 request.setStatus(.ok);
                 return;
             }
         }
     }
 
-    return request.setStatus(.not_found);
+    request.setStatus(.not_found);
 }
