@@ -22,6 +22,9 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
 
+    exe.linkSystemLibrary("libpq");
+    exe.linkLibC();
+
     const zap = b.dependency("zap", .{
            .target = target,
            .optimize = optimize,
