@@ -8,8 +8,10 @@ const on_request = MovieRouter.on_request;
 
 const DEFAULT_HTTP_PORT: usize = 8080;
 
+pub var db: DB = undefined;
+pub const allocator = std.heap.page_allocator;
+
 pub fn main() !void {
-    const allocator = std.heap.page_allocator;
     var env = try dotenv.init(allocator);
     defer env.deinit();
     const HTTP_PORT: usize = std.fmt.parseInt(usize, env.get("HTTP_PORT").?, 10) catch DEFAULT_HTTP_PORT;
@@ -18,7 +20,7 @@ pub fn main() !void {
         return;
     };
 
-    const db: DB = DB.init(DATABASE_URL) catch return;
+    db = DB.init(DATABASE_URL) catch return;
     defer db.deinit();
 
     try db.exec(
