@@ -39,6 +39,10 @@ pub fn on_request(request: zap.Request) void {
                         std.debug.print("validate\n", .{});
                         defer movie.deinit();
                         std.debug.print("Post movie id={d}, title='{s}' and relase_date={s}\n", .{ movie.value.id, movie.value.title, movie.value.release_date });
+                        Main.db.save_movie(movie.value) catch |err| {
+                            std.debug.print("{}\n", .{ err });
+                            return;
+                        };
                         request.setStatus(.ok);
                         return;
                     }

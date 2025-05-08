@@ -61,6 +61,27 @@ pub const DB = struct {
         return movies;
     }
 
+    pub fn save_movie(self: DB, movie: Movie) !void {
+        const str_id: []const u8 = try std.fmt.allocPrint(Main.allocator, "{d}", .{ movie.id });
+        const str_title: []const u8 = try std.fmt.allocPrint(Main.allocator, "{s}", .{ movie.title });
+        const str_release_date: []const u8 = try std.fmt.allocPrint(Main.allocator, "{s}", .{ movie.release_date });
+
+        const result = c.PQexecPrepared(
+            self.conn,
+            "save_movie",
+            3,
+            &[_][*c]const u8 { @ptrCast(str_id), @ptrCast(str_title), @ptrCast(str_release_date) },
+            &[_]c_int { @intCast(str_id.len), @intCast(str_title.len), @intCast(str_release_date.len) },
+            &[_]c_int { 0, 0, 0 },
+            0
+        );
+        defer c.PQclear(result);
+        if (c.PQresultStatus(result) != c.PGRES_TUPLES_OK) {
+            std.debug.print("exec save_movie failed, err: {s}\n", .{ c.PQresultErrorMessage(result) });
+            return error.SaveMovieById;
+        }
+    }
+
     pub fn delete_movie(self: DB, movie_id: i32) !void {
         const str_movie_id: []const u8 = try std.fmt.allocPrint(Main.allocator, "{d}", .{ movie_id });
         const result = c.PQexecPrepared(

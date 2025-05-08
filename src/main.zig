@@ -34,18 +34,36 @@ pub fn main() !void {
         \\ );
     );
 
-    const result_prep = c.PQprepare(
+    const save_prep = c.PQprepare(
+        db.conn,
+        "save_movie",
+        \\ insert into movie (id, title, release_date)
+        \\ values ($1, $2, $3)
+        \\ on conflict(id) do update set
+        \\ title = EXCLUDED.title,
+        \\ release_date = EXCLUDED.release_date;
+        ,
+        3,
+        null
+    );
+    if (c.PQresultStatus(save_prep) != c.PGRES_COMMAND_OK) {
+        std.debug.print("prepare save_movie failed, err: {s}\n", .{ c.PQerrorMessage(db.conn) });
+        return error.prepareSave;
+    }
+    defer c.PQclear(save_prep);
+
+    const delete_prep = c.PQprepare(
         db.conn,
         "delete_movie_by_id",
         "delete from movie where id = $1;",
         1,
         null
     );
-    if (c.PQresultStatus(result_prep) != c.PGRES_COMMAND_OK) {
+    if (c.PQresultStatus(delete_prep) != c.PGRES_COMMAND_OK) {
         std.debug.print("prepare delete_movie_by_id failed, err: {s}\n", .{ c.PQerrorMessage(db.conn) });
-        return error.prepare;
+        return error.prepareDelete;
     }
-    defer c.PQclear(result_prep);
+    defer c.PQclear(delete_prep);
 
     var listener = zap.HttpListener.init(.{
         .port = HTTP_PORT,
