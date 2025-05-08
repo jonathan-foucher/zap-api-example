@@ -50,6 +50,7 @@ pub const DB = struct {
             const id = std.mem.span(c.PQgetvalue(result, @intCast(row), 0));
             const title = std.mem.span(c.PQgetvalue(result, @intCast(row), 1));
             const release_date = std.mem.span(c.PQgetvalue(result, @intCast(row), 2));
+
             movies[row].id = std.fmt.parseInt(i32, id, 10) catch |err| {
                 std.debug.print("Failed to parse the number: {}\n", .{ err });
                 return err;

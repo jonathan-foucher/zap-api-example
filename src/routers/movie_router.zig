@@ -14,11 +14,22 @@ pub fn on_request(request: zap.Request) void {
                     return;
                 };
 
-                var buf: [256]u8 = undefined;
-                var json_body: []const u8 = undefined;
-                json_body = zap.stringifyBuf(&buf, movies, .{}).?;
+                const buf = Main.allocator.alloc(u8, @intCast(256 * movies.len)) catch |err| {
+                    std.debug.print("{}\n", .{ err });
+                    return;
+                };
+                var fba = std.heap.FixedBufferAllocator.init(buf);
+                var json_body = std.ArrayList(u8).init(fba.allocator());
+                std.json.stringify(movies, .{}, json_body.writer()) catch |err| {
+                    std.debug.print("{}\n", .{ err });
+                    return;
+                };
+
                 request.setStatus(.ok);
-                request.sendBody(json_body) catch return;
+                request.sendBody(json_body.items) catch return;
+
+                Main.allocator.free(movies);
+                Main.allocator.free(buf);
             }
 
             if (request.methodAsEnum() == .POST) {           
