@@ -53,7 +53,13 @@ pub fn on_request(request: zap.Request) void {
                     request.setStatus(.bad_request);
                     return;
                 };
+
                 std.debug.print("Delete movie with id {d}\n", .{ movie_id });
+                Main.db.delete_movie(movie_id) catch |err| {
+                    std.debug.print("{}\n", .{ err });
+                    return;
+                };
+
                 request.setStatus(.ok);
                 return;
             }

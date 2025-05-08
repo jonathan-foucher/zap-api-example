@@ -5,6 +5,9 @@ const DatabaseConnection = @import("database/database_connection.zig");
 const DB = DatabaseConnection.DB;
 const MovieRouter = @import("routers/movie_router.zig");
 const on_request = MovieRouter.on_request;
+const c = @cImport({
+    @cInclude("libpq-fe.h");
+});
 
 const DEFAULT_HTTP_PORT: usize = 8080;
 
@@ -30,6 +33,19 @@ pub fn main() !void {
         \\     release_date date not null
         \\ );
     );
+
+    const result_prep = c.PQprepare(
+        db.conn,
+        "delete_movie_by_id",
+        "delete from movie where id = $1;",
+        1,
+        null
+    );
+    if (c.PQresultStatus(result_prep) != c.PGRES_COMMAND_OK) {
+        std.debug.print("prepare delete_movie_by_id failed, err: {s}\n", .{ c.PQerrorMessage(db.conn) });
+        return error.prepare;
+    }
+    defer c.PQclear(result_prep);
 
     var listener = zap.HttpListener.init(.{
         .port = HTTP_PORT,

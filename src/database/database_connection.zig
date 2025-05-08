@@ -60,4 +60,22 @@ pub const DB = struct {
         }
         return movies;
     }
+
+    pub fn delete_movie(self: DB, movie_id: i32) !void {
+        const str_movie_id: []const u8 = try std.fmt.allocPrint(Main.allocator, "{d}", .{ movie_id });
+        const result = c.PQexecPrepared(
+            self.conn,
+            "delete_movie_by_id",
+            1,
+            &[_][*c]const u8 { @ptrCast(str_movie_id) },
+            &[_]c_int { @intCast(str_movie_id.len) },
+            &[_]c_int { 0 },
+            0
+        );
+        defer c.PQclear(result);
+        if (c.PQresultStatus(result) != c.PGRES_TUPLES_OK) {
+            std.debug.print("exec delete_movie_by_id failed, err: {s}\n", .{ c.PQresultErrorMessage(result) });
+            return error.DeleteMovieById;
+        }
+    }
 };
